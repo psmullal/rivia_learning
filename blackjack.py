@@ -31,6 +31,7 @@ Rules:
 import re
 import random
 import time
+import sys
 
 class Deck():
     '''
@@ -38,7 +39,7 @@ class Deck():
     '''
     suits: list = ['c', 'd', 'h', 's']
     face_cards: list = ['J', 'Q', 'K', 'A', '2', '3',
-                        '4', '5', '6', '7', '8', '9', '10']
+                        '4', '5', '6', '7', '8', '9', 'T']
     non_face_cards: list = list(range(2, 11))
     
     def __init__(self):
@@ -85,22 +86,20 @@ class Game(Deck):
 
         return status_str
 
-    def next_card(cards):
-        while len(cards.single_deck) > 1:
-            card = cards.single_deck.pop(1)
-            # print(f"Cards remaining: {len(cards.single_deck)}")
-            yield card
-
     def add_player_card(self, nc):
         self.player_hand.append(next(nc))
         self.player_hand_value = self.hand_value(self.player_hand)
         if self.player_hand_value > 21:
+            ''' Player busted '''
+            self.player_stands = True
             self.show_winner()
 
     def add_dealer_card(self, nc):
         self.dealer_hand.append(next(nc))
         self.dealer_hand_value = self.hand_value(self.dealer_hand)
         if self.dealer_hand_value > 21:
+            ''' Dealer Busted '''
+            self.dealer_stands = True
             self.show_winner()
 
 
@@ -120,7 +119,7 @@ class Game(Deck):
         for dc in cards:
             v = self.card_value(dc)
             # print(f"DEBUG: Dealer Card: {v}")
-            if v in 'KQJ':
+            if v in 'KQJT':
                 h_value += 10
             elif v == 'A':
                 if h_value + 11 > 21:
@@ -133,13 +132,27 @@ class Game(Deck):
         return h_value
 
     def show_winner(self):
-        if self.player_hand_value > self.dealer_hand_value:
-            return("Player Wins!")
-        elif self.player_hand_value == self.dealer_hand_value:
-            return("It's a push!")
-        elif self.player_hand_value < self.dealer_hand_value:
-            return("House wins =(")
-        
+        print(game)
+        if self.player_hand_value > 21:
+            ''' Player busts '''
+            print('Player Busted, House Wins!')
+            sys.exit(21)
+        if self.dealer_hand_value > 21:
+            ''' Dealer Busts '''
+            print("Dealer Busted, Player Wins!")
+            sys.exit(21)
+        if self.dealer_hand_value == self.player_hand_value:
+            ''' Push! '''
+            print("PUSH!")
+            sys.exit(1)
+        if self.dealer_hand_value < self.player_hand_value:
+            ''' Player wins '''
+            print('Player Wins!')
+            sys.exit(2)        
+        if self.dealer_hand_value < self.player_hand_value:
+            ''' House wins '''
+            print('House Wins!')
+            sys.exit(3)
 
     def dealer_action(self, nc):
         ''' 
@@ -148,54 +161,67 @@ class Game(Deck):
         - busts
         - beats player
         '''
-        #### FIX THIS LOGIC
-        if self.player_stands == True and self.dealer_stands == True:
-            print(self.show_winner())
-            return False
+        while True:
+            if self.player_stands == True and self.dealer_stands == True:
+                ''' compare and determine winnner'''
+                self.show_winner()
+            if self.player_stands == True:
+                ''' Player has committed to their hand.'''
+                # First check if dealer is less than 17. If so, we have to hit.
+                if self.dealer_hand_value < 17:
+                    self.add_dealer_card(nc)
+                    print('Dealer Hits')
+                    print(game)
+                    time.sleep(.5)
+                else:
+                    if self.dealer_hand_value > self.player_hand_value:
+                        ''' Dealer has beat Player '''
+                        self.dealer_stands = True
+                        self.show_winner()
+                    elif self.dealer_hand_value == self.player_hand_value:
+                        ''' Push '''
+                        self.dealer_stands = True
+                        self.show_winner()
+                    else:
+                        self.add_dealer_card(nc)
+                        print(game)
+                    return False
+        game.show_winner()
 
-        if self.dealer_hand_value > 21:
-            ''' Dealer loses '''
-            self.dealer_stands = True
-            print("Player Wins!!! Dealer busts")
-            print(self.show_winner())
-            return False
+def next_card(cards):
+    while len(cards.single_deck) > 1:
+        card = cards.single_deck.pop(1)
+        # print(f"Cards remaining: {len(cards.single_deck)}")
+        yield card
 
-        elif self.dealer_hand_value >= 17 and self.dealer_hand_value <=21:
-            ''' Dealer stands compare to player'''
-            self.dealer_stands = True
-            print(self.show_winner())
-            return False
-            
-            
-        if (self.dealer_hand_value < 17 and (
-            self.dealer_hand_value < self.player_hand_value)):
-            ''' Dealer is less than 17, must hit. '''
-            self.add_dealer_card(nc)
-            print("Dealer hits")
-            time.sleep(2)
-            print(self)
-            self.dealer_action(nc)
-        else:
-            ''' Dealer wins?'''
-            print(self.show_winner())
-            return False
 
 
 deck = Deck()
 deck.shuffle()
 
 game = Game()
-nc = Game.next_card(deck)
+nc = next_card(deck)
 game.initial_deal(nc)
 
 print(game)
 
-while True:
-    command = input("Your action? ([S]tand, [H]it, [D]ouble Down: ").lower()
-    if game.player_stands:
-        if game.dealer_action(nc):
-            pass
+while game.dealer_stands == False and game.player_stands == False:
+    if game.dealer_hand_value == 21 and len(game.dealer_hand) == 2:
+        ''' Dealer has black jack. game over. player loses '''
+        print(game)
+        print(f'Dealer has Black Jack. Player loses.')
         break
+    if game.player_hand_value == 21 and len(game.player_hand) == 2:
+        ''' Player has won the game '''
+        print(game)
+        print('Player has won the game with a Black Jack.')
+        break
+    command = input("Your action? ([S]tand, [H]it, [Q]uit: ").lower()
+    if game.player_stands and game.dealer_stands:
+        break
+    #     if game.dealer_action(nc):
+    #         pass
+    #     break
     if command == 'h':
         game.add_player_card(nc)
         print(game)
@@ -206,6 +232,7 @@ while True:
         # Can only take one card, so compare against dealer and exit
     elif command == 's':
         game.player_stands = True
+        print(game)
         if game.dealer_action(nc):
             pass
         # Compare against Dealer/let Dealer draw.
