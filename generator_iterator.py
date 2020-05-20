@@ -4,7 +4,7 @@ import time
 
 def spinner():
     # think_lib = ' .oO*Oo. '
-    think_lib = '-\|/'
+    # think_lib = '-\|/'
     # think_lib = ' -=#=- '
     # think_lib = '*#+-.'
 
