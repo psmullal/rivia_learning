@@ -33,6 +33,45 @@ import random
 import time
 import sys
 
+class Player(object):
+    hand:list  = []
+    hand_value: int = 0
+
+    def __init__(self, **kwargs):
+        ''' Need to get two cards to start '''
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+    
+    def add_card(self, nc):
+        card = next(nc)
+        self.hand.append(card)
+        print(f'{self.name} ({self.type}) dealt: {card}')
+        self.hand_value(self.hand)
+
+    def hand_value(self, cards: list):
+        """ Process Hand """
+        h_value = 0
+        for dc in cards:
+            v = self.card_value(dc)
+            # print(f"DEBUG: Card: {v} ({self.type}")
+            if v in 'KQJT':
+                h_value += 10
+            elif v == 'A':
+                if h_value + 11 > 21:
+                    h_value += 1
+                else:
+                    h_value += 11
+            else:
+                h_value += int(v)
+
+        self.hand_value = h_value
+ 
+    def card_value(self, single_card):
+        sc = single_card.strip('c').strip('d').strip('h').strip('s')
+        # print(f"DEBUG: Single Card: {sc}")
+        return sc
+
+
 class Deck():
     '''
     Standard 52 card deck
@@ -62,76 +101,64 @@ class Deck():
 
 
 class Game(Deck):
+    players = []
+    dealer = []
+
     def __init__(self):
         super().__init__()
-        self.dealer_hand = []
-        self.player_hand = []
-        self.dealer_hand_value = 0
-        self.player_hand_value = 0
-        self.player_stands = False
-        self.dealer_stands = False
 
     def __repr__(self):
 
-        self.player_hand_value = self.hand_value(self.player_hand)
-        self.dealer_hand_value = self.hand_value(self.dealer_hand)
+        p.hand_value = p.hand_value(p.hand)
+        d.hand_value = d.hand_value(d.hand)
         status_str = "----=[ Current Status ]=----"
         status_str += "\nDealer: "
-        status_str += ", ".join(self.dealer_hand)
-        status_str += f" ({self.dealer_hand_value})"
+        status_str += ", ".join(d.hand)
+        status_str += f" ({d.hand_value})"
         status_str += "\nPlayer: "
-        status_str += ", ".join(self.player_hand)
-        status_str += f" ({self.player_hand_value})"
+        status_str += ", ".join(p.hand)
+        status_str += f" ({p.hand_value})"
         status_str += "\n"
 
         return status_str
 
-    def add_player_card(self, nc):
-        self.player_hand.append(next(nc))
-        self.player_hand_value = self.hand_value(self.player_hand)
-        if self.player_hand_value > 21:
-            ''' Player busted '''
-            self.player_stands = True
-            self.show_winner()
+    # def hit(self, nc, p_or_d='player'):
+    #     if p_or_d == 'player':
+    #         self.player_hand_append(next(nc))
+    #         self.player_hand_value = self.hand_value(self.player_hand)
+    #     else:
+    #         self.dealer_hand.append(next(nc))
+    #         self.dealer_hand_value = self.hand_value(self.dealer_hand)
 
-    def add_dealer_card(self, nc):
-        self.dealer_hand.append(next(nc))
-        self.dealer_hand_value = self.hand_value(self.dealer_hand)
-        if self.dealer_hand_value > 21:
-            ''' Dealer Busted '''
-            self.dealer_stands = True
-            self.show_winner()
+    # def stand(self, p_or_d='player'):
+    #     if p_or_d == 'player':
+    #         self.player_stands = True
+    #     else:
+    #         self.dealer_stands = True
+
+    # def add_player_card(self, nc):
+    #     self.player_hand.append(next(nc))
+    #     self.player_hand_value = self.hand_value(self.player_hand)
+    #     if self.player_hand_value > 21:
+    #         ''' Player busted '''
+    #         self.player_stands = True
+    #         self.show_winner()
+
+    # def add_dealer_card(self, nc):
+    #     if self.dealer_hand_value > 21:
+    #         ''' Dealer Busted '''
+    #         self.dealer_stands = True
+    #         self.show_winner()
 
 
-    def initial_deal(self, nc):
+    def initial_deal(self, nc, p: object, d: object):
         for _ in range(2):
-            self.add_player_card(nc)
-            self.add_dealer_card(nc)
+            p.add_card(nc)
+            d.add_card(nc)
         
-    def card_value(self, single_card):
-        sc = single_card.strip('c').strip('d').strip('h').strip('s')
-        # print(f"DEBUG: Single Card: {sc}")
-        return sc
 
-    def hand_value(self, cards: list):
-        """ Process Hand """
-        h_value = 0
-        for dc in cards:
-            v = self.card_value(dc)
-            # print(f"DEBUG: Dealer Card: {v}")
-            if v in 'KQJT':
-                h_value += 10
-            elif v == 'A':
-                if h_value + 11 > 21:
-                    h_value += 1
-                else:
-                    h_value += 11
-            else:
-                h_value += int(v)
 
-        return h_value
-
-    def show_winner(self):
+    def show_winner(self, p:object, d: object):
         print(game)
         if self.player_hand_value > 21:
             ''' Player busts '''
@@ -200,11 +227,15 @@ deck = Deck()
 deck.shuffle()
 
 game = Game()
+p: object = Player(**{'name': "Player 1", 'type': 'player'})
+d: object = Player(**{'name': "Dealer", 'type': 'dealer'})
+
 nc = next_card(deck)
-game.initial_deal(nc)
+game.initial_deal(nc, p, d)
 
 print(game)
 
+sys.exit()
 while game.dealer_stands == False and game.player_stands == False:
     if game.dealer_hand_value == 21 and len(game.dealer_hand) == 2:
         ''' Dealer has black jack. game over. player loses '''
