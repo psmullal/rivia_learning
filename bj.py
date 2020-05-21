@@ -1,6 +1,7 @@
 import random
 import time
 import sys
+import os
 
 class Player():
     '''Class Definition for Player'''
@@ -127,11 +128,19 @@ class Game(Deck):
     def compare_hands(self, h1, h2):
         pass
 
+
+# define clear function 
+def clear(): 
+    # check and make call for specific operating system 
+    _ = os.system('clear' if os.name =='posix' else 'cls')
+
+
 def show_hand(player):
     p_str = f"{player.type}: "
     p_str += f", ".join(item for item in player.hand)
     p_str += f" ({player.hand_strength})"
     print(p_str)
+
 
 def main():
     ############ Tests and Status ############
@@ -140,12 +149,15 @@ def main():
     g = Game(**{"name": "Black Jack Game"})
     g.initial_deal(p1, d)
     d.hand_value()
+    
+    clear()
 
     print(d)
     show_hand(p1)
 
     if d.hand_strength == 21:
         ''' Game is over, Dealer Wins. '''
+        show_hand(d)
         print("Dealer dealt Black Jack. Game over.")
         sys.exit(1)
 
@@ -155,14 +167,13 @@ def main():
         action, before the Dealer takes any. In this case, we
         are going to follow that paradigm
         '''
-
         prompt = "Option: [H]it, [S]tand, [D]ouble down, [Q]uit: "
         p_input = input(prompt).lower()
         if p_input in 'hsdq':
             if p_input == 'd':
                 p1.stand = True
                 p1.hand.append(g.get_card())
-                show_hand(d)
+                # show_hand(d)
             if p_input == 'h':
                 p1.hand.append(g.get_card())
             if p_input == 's':
@@ -174,10 +185,12 @@ def main():
 
             p1.hand_value()
             if p1.hand_strength > 21:
+                show_hand(p1)
                 print("** Player Busts!")
                 break
 
-            show_hand(d)
+            # show_hand(d)
+            # print(d)
             show_hand(p1)
 
     while p1.stand and not d.stand:
@@ -192,6 +205,7 @@ def main():
             break
         elif d.hand_strength >= 17:
             d.stand = True
+            show_hand(d)
             print("** Dealer Stands.")
             break
         else:
@@ -212,6 +226,6 @@ def main():
         else:
             print("Dealer Wins!")
 
+
 if __name__ == "__main__":
     main()
-
