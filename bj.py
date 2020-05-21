@@ -18,15 +18,12 @@ class Player():
         ret_str = ''
         attrs = vars(self)
         for k, v in attrs.items():
-            ret_str = f'==== Class "{attrs["type"]}" Dump ====\n'
-            ret_len = len(ret_str)
+            ret_str = ''
             if self.type == 'DEALER' and self.dealer_show == False:
-                ret_str += f'\nhand      : [ ??, {attrs["hand"][1]}]'
+                ret_str += f'\nDEALER: ??, {attrs["hand"][1]}'
             else:
-                ret_str += '\n'.join('%-10s: %s' % item for item in attrs.items())
-            
-            border = '-' * ret_len
-            ret_str += f'\n{border}\n'
+                ret_str += '\n'.join('%-10s: %s' % item for item in attrs.items())            
+            # ret_str += f'\n{border}\n'
         return ret_str
 
     def hand_value(self):
@@ -144,7 +141,7 @@ def main():
     g.initial_deal(p1, d)
     d.hand_value()
 
-    show_hand(d)
+    print(d)
     show_hand(p1)
 
     if d.hand_strength == 21:
@@ -165,15 +162,21 @@ def main():
             if p_input == 'd':
                 p1.stand = True
                 p1.hand.append(g.get_card())
+                show_hand(d)
             if p_input == 'h':
                 p1.hand.append(g.get_card())
             if p_input == 's':
                 p1.stand = True
+                show_hand(d)
                 break
             if p_input == 'q':
                 break
 
             p1.hand_value()
+            if p1.hand_strength > 21:
+                print("** Player Busts!")
+                break
+
             show_hand(d)
             show_hand(p1)
 
@@ -182,7 +185,6 @@ def main():
         Dealer now has to go through the process of drawing
         They can either tie, bust, or stand at 17
         '''
-        
         if d.hand_strength > 21:
             ''' Dealer Busts '''
             d.stand = True
@@ -198,8 +200,8 @@ def main():
             print("** Dealer Hits")
             time.sleep(.5)
             d.hand_value()
-        show_hand(p1)
         show_hand(d)
+        show_hand(p1)
 
     if p1.stand and d.stand:
         ''' Compare hands to determine winner'''
