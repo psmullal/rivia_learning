@@ -1,5 +1,6 @@
 import random
 import time
+import sys
 
 class Player():
     '''Class Definition for Player'''
@@ -126,9 +127,6 @@ class Game(Deck):
         deal_card = super().next_card()
         return next(deal_card)
 
-    def check_blackjack(self, hand):
-        pass
-
     def compare_hands(self, h1, h2):
         pass
 
@@ -144,8 +142,15 @@ def main():
     d = Player("dealer")
     g = Game(**{"name": "Black Jack Game"})
     g.initial_deal(p1, d)
+    d.hand_value()
+
     show_hand(d)
     show_hand(p1)
+
+    if d.hand_strength == 21:
+        ''' Game is over, Dealer Wins. '''
+        print("Dealer dealt Black Jack. Game over.")
+        sys.exit(1)
 
     while not p1.stand:
         '''
@@ -153,27 +158,57 @@ def main():
         action, before the Dealer takes any. In this case, we
         are going to follow that paradigm
         '''
-        
+
         prompt = "Option: [H]it, [S]tand, [D]ouble down, [Q]uit: "
         p_input = input(prompt).lower()
         if p_input in 'hsdq':
             if p_input == 'd':
                 p1.stand = True
                 p1.hand.append(g.get_card())
-                p1.hand_value()
-                show_hand(d)
-                show_hand(p1)
             if p_input == 'h':
                 p1.hand.append(g.get_card())
-                p1.hand_value()
-                show_hand(d)
-                show_hand(p1)
             if p_input == 's':
                 p1.stand = True
                 break
             if p_input == 'q':
                 break
 
+            p1.hand_value()
+            show_hand(d)
+            show_hand(p1)
+
+    while p1.stand and not d.stand:
+        ''' 
+        Dealer now has to go through the process of drawing
+        They can either tie, bust, or stand at 17
+        '''
+        
+        if d.hand_strength > 21:
+            ''' Dealer Busts '''
+            d.stand = True
+            print("** Dealer Busts!")
+            break
+        elif d.hand_strength >= 17:
+            d.stand = True
+            print("** Dealer Stands.")
+            break
+        else:
+            ''' Dealer must have 16 or below '''
+            d.hand.append(g.get_card())
+            print("** Dealer Hits")
+            time.sleep(.5)
+            d.hand_value()
+        show_hand(p1)
+        show_hand(d)
+
+    if p1.stand and d.stand:
+        ''' Compare hands to determine winner'''
+        if p1.hand_strength > d.hand_strength:
+            print("Player Wins!")
+        elif p1.hand_strength == d.hand_strength:
+            print("Push!")
+        else:
+            print("Dealer Wins!")
 
 if __name__ == "__main__":
     main()
