@@ -14,6 +14,7 @@ class Player():
         self.hand_strength: int = 0
         self.dealer_show = False
         self.stand = False
+        self.busted = False
 
     def __repr__(self):
         ret_str = ''
@@ -141,6 +142,15 @@ def show_hand(player):
     p_str += f" ({player.hand_strength})"
     print(p_str)
 
+def show_table(player, dealer):
+    clear()
+    if dealer.dealer_show == False:
+        print(dealer)
+    else:
+        show_hand(dealer)
+    
+    show_hand(player)
+
 
 def main():
     ############ Tests and Status ############
@@ -149,16 +159,15 @@ def main():
     g = Game(**{"name": "Black Jack Game"})
     g.initial_deal(p1, d)
     d.hand_value()
-    
-    clear()
+    has_player_acted = False    
 
-    print(d)
-    show_hand(p1)
+    show_table(p1, d)
 
     if d.hand_strength == 21:
         ''' Game is over, Dealer Wins. '''
-        show_hand(d)
-        print("Dealer dealt Black Jack. Game over.")
+        d.dealer_show = True
+        show_table(p1, d)
+        print("[ Dealer dealt Black Jack ]")
         sys.exit(1)
 
     while not p1.stand:
@@ -167,58 +176,79 @@ def main():
         action, before the Dealer takes any. In this case, we
         are going to follow that paradigm
         '''
-        prompt = "Option: [H]it, [S]tand, [D]ouble down, [Q]uit: "
+        if not has_player_acted:
+            prompt = "Option: [H]it, [S]tand, [D]ouble down, [F]orfeit: "
+        else:
+            prompt = "Option: [H]it, [S]tand: "
+
         p_input = input(prompt).lower()
-        if p_input in 'hsdq':
+        if p_input in 'hsdf':
+            
             if p_input == 'd':
                 p1.stand = True
                 p1.hand.append(g.get_card())
-                # show_hand(d)
-            if p_input == 'h':
-                p1.hand.append(g.get_card())
+
             if p_input == 's':
                 p1.stand = True
-                show_hand(d)
-                break
-            if p_input == 'q':
                 break
 
+            if p_input == 'f':
+                p1.stand = True
+                print("Player forfeits for half a bet")
+                sys.exit()
+
+            if p_input == 'h':
+                p1.hand.append(g.get_card())
+            
             p1.hand_value()
             if p1.hand_strength > 21:
-                show_hand(p1)
-                print("** Player Busts!")
-                break
+                p1.busted = True
+                show_table(p1, d)
+                print("[ Player Busts ]")
+                sys.exit()
 
             # show_hand(d)
             # print(d)
-            show_hand(p1)
+            has_player_acted = True
+            show_table(p1, d)
 
     while p1.stand and not d.stand:
         ''' 
         Dealer now has to go through the process of drawing
         They can either tie, bust, or stand at 17
         '''
+        show_table(p1, d)
+
         if d.hand_strength > 21:
             ''' Dealer Busts '''
             d.stand = True
-            print("** Dealer Busts!")
+            d.busted = True
+            print("[ Dealer Busts! ]")
             break
         elif d.hand_strength >= 17:
             d.stand = True
-            show_hand(d)
-            print("** Dealer Stands.")
+            # show_hand(d)
+            print("[ Dealer Stands ]")
             break
         else:
             ''' Dealer must have 16 or below '''
             d.hand.append(g.get_card())
-            print("** Dealer Hits")
-            time.sleep(.5)
+            print("[ Dealer Hits ]")
+            show_table(p1, d)
+            time.sleep(1)
             d.hand_value()
-        show_hand(d)
-        show_hand(p1)
 
     if p1.stand and d.stand:
         ''' Compare hands to determine winner'''
+        d.dealer_show = True
+        show_table(p1, d)
+
+        if d.busted:
+            print("Player Wins because the Dealer busted")
+            sys.exit()
+        if p1.busted:
+            print("Dealer Wins because the Player busted")
+            sys.exit()
         if p1.hand_strength > d.hand_strength:
             print("Player Wins!")
         elif p1.hand_strength == d.hand_strength:
