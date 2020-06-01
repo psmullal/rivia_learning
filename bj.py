@@ -266,10 +266,12 @@ def main():
     Description: Play a game of Black Jack.
     Currently, no wagers are being made. 
     TODO:
+    build pytest / mock tests
     Add prompting/argparse for username
     add pickle for player.bank to track:
         wins, losses, pushes, and current bankroll.
     '''
+
     p1 = Player("player")
     d = Player("dealer")
     g = Game(**{"name": "Black Jack Game", 'num_decks': 3})
