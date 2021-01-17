@@ -1,6 +1,6 @@
 # !/usr/bin/env python
 # ource_file = input("Enter filename to process: ")
-source_file = '/etc/passwd'
+source_file = 'cooker.py'
 content = ''
 try:
     with open(source_file, 'r') as fh:
