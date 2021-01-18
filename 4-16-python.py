@@ -31,8 +31,8 @@ Owner:                  {}
         '''
 
         return(monitor_desc.format(self.m_make, self.m_model,
-               self.x_res, self.y_res, ', '.join(self.connection_types),
-               self.owner))
+            self.x_res, self.y_res, ', '.join(self.connection_types),
+            self.owner))
 
 
 apple = Monitor('Apple', 'Thunderbolt')
@@ -40,8 +40,8 @@ apple = Monitor('Apple', 'Thunderbolt')
 # apple.set_connection(['Lightning', 'USB-C'])
 
 properties = {'x_res': 2560, 'y_res': 1440,
-              'connection_types': ['Lightning', 'USB-C'],
-              'owner': "Miles"}
+            'connection_types': ['Lightning', 'USB-C'],
+            'owner': "Miles"}
 apple.set_properties(**properties)
 
 dell = Monitor('Dell', 'Curved')
