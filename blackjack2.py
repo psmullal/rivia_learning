@@ -18,6 +18,7 @@ import time
 import os
 import pickle
 import sys
+from typing import overload
 
 
 class Player():
@@ -51,6 +52,7 @@ class Player():
         self.aces = 0
         self.bank = 5000 if p_type == 'player' else 1000000
         self.bet_amount = 20
+        self.multiplier = 1
 
     def __repr__(self):
         '''
@@ -208,6 +210,7 @@ class Game(Deck):
         for k, v in attrs.items():
             ret_str = '==== Class "Game" Dump ====\n'
             ret_len = len(ret_str)
+            ret_str += f"Num Cards: {len(g.multi_deck)}\n"
             ret_str += '\n'.join('%-10s: %s' % item for item in attrs.items())
             border = '-' * ret_len
             ret_str += f'\n{border}\n'
@@ -284,137 +287,132 @@ def play_hand(p1, dlr):
     '''
     Set up new deal
     '''
-    g.shuffle()
+    # g.shuffle()
+    print(g)
     g.initial_deal(p1, dlr)
     dlr.hand_value()
+    p1.multiplier = 1
     has_player_acted = False
     dlr.dealer_show = False
     dlr.stand = False
     p1.stand = False
+    p1.busted = False
+    dlr.busted = False
+
     show_table(p1, dlr)
     
     '''
-    Let's go!
+    Let's Go!
     '''
+
+    # Dealer has 21?
+    #     y = player loses game over
+    #     n = do player stuff
+    # Player has 21?
+    #     y = Player Wins 1.5x bet
+    #     n = Player choices
+
+    '''
+    There cannot be a bust yet.
+    '''
+    
     if dlr.hand_strength == 21:
-        if p1.hand_strength != 21:
-            ''' Game is over, dlr Wins. '''
-            dlr.dealer_show = True
-            show_table(p1, dlr)
-            print("< Dealer dealt Black Jack >")
-            p1.bank -= p1.bet_amount
-            return
-        else:
-            dlr.dealer_show = True
-            show_table(p1, dlr)
-            print("== Even Money ==")
-            return
+        p1.bank -= p1.bet_amount
+        print(f"Dealer Black Jack! You lose.{p1.bet_amount}")
+        return
+    if p1.hand_strength ==21:
+        ''' Since Dealer doesn't have 21, we win '''
+        p1.bank += p1.bet_amount * 1.5
+        print(f"Player Black Jack! You Win {p1.bet_amount * p1.multiplier}")
+        return
+    
+    '''
+    Need to figure out if a hand is busted or not.
+        Process is for the player to act first. Deciding on their action.
+        Then the Dealer takes a turn. Dealer hits on 16 and less, stays on 17 and higher.
+    '''
+    while p1.stand is False or dlr.stand is False:
+        while p1.stand is False:
+            '''
+            Loop through prompting for action
+            '''
+            input_str = "[H]it, [S]tand, [D]ouble, [F]orfeit: "
+            p_input = input(input_str).lower()
+            if p_input in 'hsdf':
 
-    while not p1.stand:
-        '''
-        Expectation is that the Player needs to finalize their
-        action, before the dlr takes any. In this case, we
-        are going to follow that paradigm
-        '''
-        if not has_player_acted:
-            if p1.hand_strength == 21:
-                ''' Player has blackjack
-                Check dlr hand. If no face/ace card, player wins
-                '''
-                dlr.dealer_show = True
-                dlr.stand = True
-                p1.stand = True
-                return
+                if p_input == 'd':
+                    p1.stand = True
+                    card = g.get_card()
+                    p1.multiplier = 2
+                    p1.hand.append(card)
 
-            prompt = "Option: [H]it, [S]tand, [D]ouble down, [F]orfeit: "
-        else:
-            prompt = "Option: [H]it, [S]tand: "
+                if p_input == 's':
+                    p1.stand = True
 
-        p_input = input(prompt).lower()
-        if p_input in 'hsdf':
-            
-            if p_input == 'd':
-                p1.stand = True
-                card = g.get_card()
-                p1.hand.append(card)
+                if p_input == 'f':
+                    p1.stand = True
+                    print("Player forfeits for half a bet")
+                    p1.bank -= (p1.bet_amount/2)
 
-            if p_input == 's':
-                p1.stand = True
+                if p_input == 'h':
+                    card = g.get_card()
+                    p1.hand.append(card)
+
+                p1.hand_value()
+
+                if p1.hand_strength > 21:
+                    p1.busted = True
+                    show_table(p1, dlr)
+                    print("[ Player Busts ]")
+                    p1.bank -= p1.bet_amount
+                    return
+                elif p1.hand_strength == 21:
+                    p1.stand = True
+
+                has_player_acted = True
                 
-
-            if p_input == 'f':
-                p1.stand = True
-                print("Player forfeits for half a bet")
-                p1.bank -= (p1.bet_amount/2)
-                
-            if p_input == 'h':
-                card = g.get_card()
-                p1.hand.append(card)
-            
-            p1.hand_value()
-
-            if p1.hand_strength > 21:
-                p1.busted = True
                 show_table(p1, dlr)
-                print("[ Player Busts ]")
-                p1.bank -= p1.bet_amount
+        while dlr.stand is False:
+            dlr.dealer_show = True
+            show_table(p1, dlr)
+
+            if dlr.hand_strength > 21:
+                ''' dlr Busts '''
+                dlr.stand = True
+                dlr.busted = True
+                print("[ Dealer Busts! ]")
+                p1.bank += p1.bet_amount
                 return
-            elif p1.hand_strength == 21:
-                p1.stand = True
+            elif dlr.hand_strength >= 17:
+                dlr.stand = True
+                # show_hand(dlr)
+                print("[ Dealer Stands ]")
+                # return
+            else:
+                ''' dlr must have 16 or below '''
+                dlr.hand.append(g.get_card())
+                print("[ Dealer Hits ]")
+                time.sleep(1)
+                show_table(p1, dlr)
+                dlr.hand_value()
 
-            has_player_acted = True
-            
-            show_table(p1, dlr)
 
-    while p1.stand and not dlr.stand:
-        ''' 
-        dlr now has to go through the process of drawing
-        They can either tie, bust, or stand at 17+
-        '''
-        dlr.dealer_show = True
-        show_table(p1, dlr)
-
-        if dlr.hand_strength > 21:
-            ''' dlr Busts '''
-            dlr.stand = True
-            dlr.busted = True
-            print("[ Dealer Busts! ]")
-            p1.bank += p1.bet_amount
-            # return
-        elif dlr.hand_strength >= 17:
-            dlr.stand = True
-            # show_hand(dlr)
-            print("[ Dealer Stands ]")
-            # return
-        else:
-            ''' dlr must have 16 or below '''
-            dlr.hand.append(g.get_card())
-            print("[ Dealer Hits ]")
-            time.sleep(1)
-            show_table(p1, dlr)
-            dlr.hand_value()
-
-    if p1.stand and dlr.stand:
-        ''' Compare hands to determine winner'''
-        dlr.dealer_show = True
-        show_table(p1, dlr)
-
-        if dlr.busted:
-            print("++ Player Wins / Dealer busted ++")
-            p1.bank += p1.bet_amount
+        if p1.hand_strength == dlr.hand_strength:
+            ''' Push '''
+            print(f"PUSH! Player: {p1.hand_strength} Dealer: {dlr.hand_strength}")
             return
-        if p1.busted:
-            print("-- Dealer Wins / Player busted --")
-            p1.bank -= p1.bet_amount
-            return
-        if p1.hand_strength > dlr.hand_strength:
-            print("++ Player Wins! ++")
-            p1.bank += p1.bet_amount
-        elif p1.hand_strength == dlr.hand_strength:
-            print("> Push! <")
+        elif p1.hand_strength > dlr.hand_strength:
+            ''' Player Wins '''
+            print(f"Player wins {p1.bet_amount}")
+            p1.bank += p1.bet_amount * p1.multiplier
+        elif p1.hand_strength < dlr.hand_strength:
+            ''' Dealer Wins '''
+            print(f"Dealer Wins!")
         else:
-            p1.bank -= p1.bet_amount
-            print("< Dealer Wins! >")
+            print(f"Something is wrong: Player {p1.hand_strength} v. Dealer {dlr.hand_strength}\n")
+
+
+
 
 # player_name = input("Enter your name: ")
 # kw_player = {'name': player_name,}
@@ -460,6 +458,7 @@ Outer loop:
 '''
 ##  Outermost Loop
 g = Game(**{"name": "Black Jack Game", 'num_decks': 6})
+g.shuffle()
 # print(f"There are {len(g.multi_deck)} cards in the shoe.")
 while len(g.multi_deck) > 20:
     ''' 
